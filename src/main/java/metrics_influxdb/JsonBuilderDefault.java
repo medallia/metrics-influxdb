@@ -1,10 +1,12 @@
 package metrics_influxdb;
 
+import io.dropwizard.metrics.MetricName;
+
 import java.util.Collection;
 
 class JsonBuilderDefault implements JsonBuilder {
-	private final StringBuilder json = new StringBuilder();
-	private boolean hasSeriesData;
+	protected final StringBuilder json = new StringBuilder();
+	protected boolean hasSeriesData;
 
 	@Override
 	public boolean hasSeriesData() {
@@ -27,7 +29,7 @@ class JsonBuilderDefault implements JsonBuilder {
 	}
 
 	@Override
-	public void appendSeries(String namePrefix, String name, String nameSuffix, String[] columns, Object[][] points) {
+	public void appendSeries(String namePrefix, MetricName name, String nameSuffix, String[] columns, Object[][] points) {
 		hasSeriesData = true;
 		if (json.length() > 1)
 			json.append(',');

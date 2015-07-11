@@ -17,12 +17,12 @@ import java.util.concurrent.TimeUnit;
 import metrics_influxdb.InfluxdbHttp;
 import metrics_influxdb.InfluxdbReporter;
 
-import com.codahale.metrics.ConsoleReporter;
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.ScheduledReporter;
+import io.dropwizard.metrics.ConsoleReporter;
+import io.dropwizard.metrics.Gauge;
+import io.dropwizard.metrics.Meter;
+import io.dropwizard.metrics.MetricFilter;
+import io.dropwizard.metrics.MetricRegistry;
+import io.dropwizard.metrics.ScheduledReporter;
 
 public class SendToLocalInfluxDB {
 

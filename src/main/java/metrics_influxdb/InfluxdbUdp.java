@@ -1,5 +1,7 @@
 package metrics_influxdb;
 
+import io.dropwizard.metrics.MetricName;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
@@ -10,10 +12,12 @@ public class InfluxdbUdp implements Influxdb {
 	private final String host;
 	private final int port;
 	public boolean debugJson = false;
+	private INFLUXDB_VERSION version;
+	private String database;
+	private String precision;
 
 	public InfluxdbUdp(String host, int port) {
 		jsonBuilders = new ArrayList<>();
-
 		this.host = host;
 		this.port = port;
 	}
@@ -34,8 +38,9 @@ public class InfluxdbUdp implements Influxdb {
 	}
 
 	@Override
-	public void appendSeries(String namePrefix, String name, String nameSuffix, String[] columns, Object[][] points) {
-		JsonBuilderDefault jsonBuilder = new JsonBuilderDefault();
+	public void appendSeries(String namePrefix, MetricName name, String nameSuffix, String[] columns, Object[][] points) {
+		JsonBuilderDefault jsonBuilder = version == INFLUXDB_VERSION.ZERO_POINT_EIGHT?
+				new JsonBuilderDefault():new JsonBuilderV9(database,precision);
 		jsonBuilder.reset();
 		jsonBuilder.appendSeries(namePrefix, name, nameSuffix, columns, points);
 		jsonBuilders.add(jsonBuilder);
@@ -71,5 +76,25 @@ public class InfluxdbUdp implements Influxdb {
 		}
 
 		return 0;
+	}
+
+	@Override
+	public void setDebug(boolean debug) {
+		debugJson = debug;
+	}
+
+	@Override
+	public void setVersion(INFLUXDB_VERSION version) {
+		this.version = version;
+	}
+
+	@Override
+	public void setDatabase(String database) {
+		this.database = database;
+	}
+
+	@Override
+	public void setPrecision(String precision) {
+		this.precision = precision;
 	}
 }

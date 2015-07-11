@@ -12,9 +12,14 @@
 //	this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 package metrics_influxdb;
 
+import io.dropwizard.metrics.MetricName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
@@ -42,6 +47,13 @@ import java.util.concurrent.TimeUnit;
  */
 public class InfluxdbHttp implements Influxdb {
 	private static final Charset UTF_8 = Charset.forName("UTF-8");
+	private INFLUXDB_VERSION version;
+	private String database;
+	private String precision;
+	private String username;
+	private String password;
+	private String host;
+	private int port;
 
 	public static String toTimePrecision(TimeUnit t) {
 		switch (t) {
@@ -56,7 +68,7 @@ public class InfluxdbHttp implements Influxdb {
 		}
 	}
 
-	public final URL url;
+	public URL url;
 	/** true => to print Json on System.err */
 	public boolean debugJson = false;
 	public JsonBuilder jsonBuilder = new JsonBuilderDefault();
@@ -93,11 +105,17 @@ public class InfluxdbHttp implements Influxdb {
 	 * @throws IOException If the URL is malformed
 	 */
 	public InfluxdbHttp(String host, int port, String path, String database, String username, String password, TimeUnit timePrecision) throws Exception  {
+		this.database = database;
+		this.username = username;
+		this.password = password;
+		this.precision = toTimePrecision(timePrecision);
+		this.host = host;
+		this.port = port;
 		this.url = new URL("http", host, port,
 			path + "/db/" + database
 			+ "/series?u=" + URLEncoder.encode(username, UTF_8.name())
 			+ "&p=" + password
-			+ "&time_precision=" + toTimePrecision(timePrecision)
+			+ "&time_precision=" + this.precision
 		);
 	}
 
@@ -120,16 +138,17 @@ public class InfluxdbHttp implements Influxdb {
 		jsonBuilder.reset();
 	}
 
-	public void appendSeries(String namePrefix, String name, String nameSuffix, String[] columns, Object[][] points) {
+	public void appendSeries(String namePrefix, MetricName name, String nameSuffix, String[] columns, Object[][] points) {
 		jsonBuilder.appendSeries(namePrefix, name, nameSuffix, columns, points);
 	}
 	public int sendRequest(boolean throwExc, boolean printJson) throws Exception {
+		Logger slf4jLogger = LoggerFactory.getLogger(InfluxdbHttp.class);
 		String json = jsonBuilder.toJsonString();
 
 		if (printJson || debugJson) {
-			System.err.println("----");
-			System.err.println(json);
-			System.err.println("----");
+			slf4jLogger.debug("----");
+			slf4jLogger.debug(json);
+			slf4jLogger.debug("----");
 		}
 
 		HttpURLConnection con = (HttpURLConnection) url.openConnection();
@@ -145,12 +164,42 @@ public class InfluxdbHttp implements Influxdb {
 		wr.close();
 
 		int responseCode = con.getResponseCode();
-		if (responseCode == HttpURLConnection.HTTP_OK) {
+		if (responseCode == HttpURLConnection.HTTP_OK||responseCode == HttpURLConnection.HTTP_NO_CONTENT) {
 			// ignore Response content
 			con.getInputStream().close();
 		} else if (throwExc) {
+			slf4jLogger.error("HTTP Code from InfluxDB:" + responseCode);
 			throw new IOException("Server returned HTTP response code: " + responseCode + "for URL: " + url + " with content :'" + con.getResponseMessage() + "'");
 		}
 		return responseCode;
+	}
+
+	@Override
+	public void setDebug(boolean debug) {
+		debugJson = debug;
+	}
+
+	@Override
+	public void setVersion(INFLUXDB_VERSION version) {
+		this.version = version;
+		if(version == INFLUXDB_VERSION.ZERO_POINT_NINE) {
+			jsonBuilder = new JsonBuilderV9(database, "ms");
+			try {
+				this.url = new URL("http", host, port,"/write?u=" + username + "&p=" + password);
+			} catch (MalformedURLException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	@Override
+	public void setDatabase(String database) {
+		this.database = database;
+
+	}
+
+	@Override
+	public void setPrecision(String precision) {
+		this.precision = precision;
 	}
 }

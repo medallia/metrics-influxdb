@@ -1,6 +1,10 @@
 package metrics_influxdb;
 
+import io.dropwizard.metrics.MetricName;
+
 interface JsonBuilder {
+
+	public static final String TAGS = "tags";
 
 	/**
 	 * Returns true if this builder has series data to send.
@@ -26,5 +30,5 @@ interface JsonBuilder {
 	 * @param columns
 	 * @param points
 	 */
-	public abstract void appendSeries(String namePrefix, String name, String nameSuffix, String[] columns, Object[][] points);
+	public abstract void appendSeries(String namePrefix, MetricName name, String nameSuffix, String[] columns, Object[][] points);
 }

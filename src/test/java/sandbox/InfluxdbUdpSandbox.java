@@ -1,8 +1,8 @@
 package sandbox;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.MetricRegistry;
+import io.dropwizard.metrics.Counter;
+import io.dropwizard.metrics.MetricFilter;
+import io.dropwizard.metrics.MetricRegistry;
 import metrics_influxdb.InfluxdbReporter;
 import metrics_influxdb.InfluxdbUdp;
 
